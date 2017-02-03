@@ -111,11 +111,12 @@ int main(int argc, char *argv[])
 				}
 				continue;
 			}else{ //accept client socket
-				int done = 0;
+				int done = 0; //if connect close, set done = 1
 				while(1)
 				{
 					ssize_t count;
 					char buf[512];
+					memset(buf,0,sizeof(buf));
 					count = read(evs[i].data.fd, buf, sizeof(buf) );
 					if( count == -1 ){
 						/* If errno == EAGAIN, that means we have read all
@@ -132,9 +133,11 @@ int main(int argc, char *argv[])
 						break;
 					}//if we get count == sizeof(buf) there were more data in the socket waiting to read!
 					//else if( count == sizeof(buf) ){ continue; }
-
-					printf("content from remote client:%s\n", buf);
-					write(evs[i].data.fd, buf, strlen(buf));
+					printf("content from remote client:\n    %s\n", buf);
+					char *feedback = "halo man,I heared from you!";
+					if( send( evs[i].data.fd, feedback, strlen(feedback), 0) < 0 ){
+						printf("write error[%d]:%s\n", errno, strerror(errno) );
+					}
 				}
 				if( done ){
 					printf("connection close by remote socket:%d\n", evs[i].data.fd);
@@ -202,7 +205,7 @@ static int socket_svr_bind( char *port )
   	hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
   	hints.ai_flags = 0;     /* All interfaces */
 
-  	s = getaddrinfo( NULL, port, &hints, &result);
+  	s = getaddrinfo( "0.0.0.0", port, &hints, &result);
   	if( s != 0 ){
   		fprintf(stderr, "getaddrinfo error:%s\n", gai_strerror(s) );
   		return -1;
